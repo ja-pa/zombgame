@@ -46,7 +46,9 @@ def detect_collision(player,items_list):
     return ret_index
 
 
-
+class Bullet(arcade.Sprite):
+    def __init__(self):
+        super().__init__()
 
 
 class Coin(arcade.AnimatedTimeSprite):
@@ -141,7 +143,7 @@ class Zombie(arcade.AnimatedTimeSprite):
 
     def update(self):
         #self.center_x += MOVEMENT_SPEED
-        print("update",self.center_x,self.walk_direction,self.walk_direction*MOVEMENT_SPEED)
+        #print("update",self.center_x,self.walk_direction,self.walk_direction*MOVEMENT_SPEED)
         if self.center_x<=self.walk_from_x:
             self.walk_direction=+1.0
             self.set_action("right_walk")
@@ -257,6 +259,7 @@ class MyGame(arcade.Window):
         self.all_sprites_list = None
         self.coin_list = None
         self.wall_list = None
+        self.bullet_list = None
         self.zombie_list = None
         self.physics_engine = None
 
@@ -278,6 +281,7 @@ class MyGame(arcade.Window):
         self.score = 0
         #self.player = arcade.AnimatedWalkingSprite()
         self.wall_list = arcade.SpriteList()
+        self.bullet_list = arcade.SpriteList()
         character_scale = 0.3
         SPRITE_SCALING= 0.5
         # crete enemy
@@ -372,6 +376,7 @@ class MyGame(arcade.Window):
         # Draw all the sprites.
         self.all_sprites_list.draw()
         self.wall_list.draw()
+        self.bullet_list.draw()
 
         # Put the text on the screen.
         output = "Score: {}".format(self.score)
@@ -398,6 +403,19 @@ class MyGame(arcade.Window):
             pass
         elif key == arcade.key.A:
             self.player.change_x=0 # dont move while shooting
+            # Create a bullet
+            bullet = arcade.Sprite("img/laserBlue01.png", 0.2)
+
+            # Position the bullet at the player's current location
+            start_x,start_y = (self.player.center_x,self.player.center_y)
+            bullet.center_x,bullet.center_y = (start_x,start_y)
+            if self.player.get_last_side()=="right":
+                bullet.change_x = 10
+            else:
+                bullet.change_x = -10
+
+            self.bullet_list.append(bullet)
+
             if self.player.get_last_side()=="left":
                 self.player.set_action("left_attack")
             else:
@@ -427,16 +445,17 @@ class MyGame(arcade.Window):
             self.player.change_y = 0
         elif key == arcade.key.LEFT or key == arcade.key.RIGHT:
             self.player.change_x = 0
-            if self.player.get_last_side()=="left":
-                self.player.set_action("left_idle")
-            else:
-                self.player.set_action("right_idle")
+        if self.player.get_last_side()=="left":
+            self.player.set_action("left_idle")
+        else:
+            self.player.set_action("right_idle")
 
     def update(self, delta_time):
         """ Movement and game logic """
         self.all_sprites_list.update()
         self.all_sprites_list.update_animation()
         self.physics_engine.update()
+        self.bullet_list.update()
 
         # Generate a list of all sprites that collided with the player.
         hit_list=detect_collision(self.player,self.coin_list)
